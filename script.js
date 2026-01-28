@@ -1,13 +1,44 @@
-// Voting System with Local Storage
+// Voting System with API Backend
 class ManifestoVoting {
     constructor() {
-        this.storageKey = 'manifesto_votes';
         this.votedKey = 'manifesto_voted_items';
         this.items = [];
-        this.votes = this.loadVotes();
+        this.votes = {};
         this.votedItems = this.loadVotedItems();
         
-        this.init();
+        this.loadVotes().then(() => {
+            this.init();
+        });
+    }
+
+    async loadVotes() {
+        try {
+            const response = await fetch('/api/votes');
+            if (response.ok) {
+                const data = await response.json();
+                this.votes = data.votes || {};
+            }
+        } catch (error) {
+            console.error('Failed to load votes:', error);
+            this.votes = {};
+        }
+    }
+
+    loadVotedItems() {
+        try {
+            const stored = localStorage.getItem(this.votedKey);
+            return stored ? JSON.parse(stored) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    saveVotedItems() {
+        try {
+            localStorage.setItem(this.votedKey, JSON.stringify(this.votedItems));
+        } catch (e) {
+            console.error('Failed to save voted items:', e);
+        }
     }
 
     init() {
@@ -40,65 +71,66 @@ class ManifestoVoting {
         this.sortItems();
     }
 
-    loadVotes() {
-        try {
-            const stored = localStorage.getItem(this.storageKey);
-            return stored ? JSON.parse(stored) : {};
-        } catch (e) {
-            return {};
-        }
-    }
-
-    loadVotedItems() {
-        try {
-            const stored = localStorage.getItem(this.votedKey);
-            return stored ? JSON.parse(stored) : [];
-        } catch (e) {
-            return [];
-        }
-    }
-
-    saveVotes() {
-        try {
-            localStorage.setItem(this.storageKey, JSON.stringify(this.votes));
-        } catch (e) {
-            console.error('Failed to save votes:', e);
-        }
-    }
-
-    saveVotedItems() {
-        try {
-            localStorage.setItem(this.votedKey, JSON.stringify(this.votedItems));
-        } catch (e) {
-            console.error('Failed to save voted items:', e);
-        }
-    }
-
-    handleVote(id, itemElement) {
+    async handleVote(id, itemElement) {
         // Check if already voted for this item
         if (this.votedItems.includes(id)) {
             return;
         }
 
-        // Increment vote count
-        this.votes[id] = (this.votes[id] || 0) + 1;
-        this.votedItems.push(id);
-
-        // Update UI
-        const voteCountEl = itemElement.querySelector('.vote-count');
         const voteButton = itemElement.querySelector('.vote-button');
+        const voteCountEl = itemElement.querySelector('.vote-count');
         
-        voteCountEl.textContent = this.votes[id];
-        voteButton.classList.add('voted');
+        // Disable button while processing
         voteButton.disabled = true;
-        voteButton.querySelector('.vote-text').textContent = 'Voted';
+        const originalText = voteButton.querySelector('.vote-text').textContent;
+        voteButton.querySelector('.vote-text').textContent = 'Voting...';
 
-        // Save to local storage
-        this.saveVotes();
-        this.saveVotedItems();
+        try {
+            const response = await fetch('/api/vote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ itemId: id }),
+            });
 
-        // Sort items
-        this.sortItems();
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                // Update local state
+                this.votes[id] = (this.votes[id] || 0) + 1;
+                this.votedItems.push(id);
+                this.saveVotedItems();
+
+                // Update UI
+                voteCountEl.textContent = this.votes[id];
+                voteButton.classList.add('voted');
+                voteButton.querySelector('.vote-text').textContent = 'Voted';
+
+                // Sort items
+                this.sortItems();
+            } else {
+                // Error - re-enable button
+                voteButton.disabled = false;
+                voteButton.querySelector('.vote-text').textContent = originalText;
+                
+                if (data.error === 'Already voted for this item') {
+                    // Mark as voted locally
+                    this.votedItems.push(id);
+                    this.saveVotedItems();
+                    voteButton.classList.add('voted');
+                    voteButton.disabled = true;
+                    voteButton.querySelector('.vote-text').textContent = 'Voted';
+                } else {
+                    alert('Failed to submit vote. Please try again.');
+                }
+            }
+        } catch (error) {
+            console.error('Error submitting vote:', error);
+            voteButton.disabled = false;
+            voteButton.querySelector('.vote-text').textContent = originalText;
+            alert('Failed to submit vote. Please try again.');
+        }
     }
 
     sortItems() {

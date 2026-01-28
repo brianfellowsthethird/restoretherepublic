@@ -1,0 +1,12 @@
+{
+  "name": "restore-the-republic",
+  "version": "1.0.0",
+  "description": "Manifesto website with voting",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  }
+}
+
