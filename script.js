@@ -1,4 +1,4 @@
-// Voting System with Session Storage
+// Voting System with Local Storage
 class ManifestoVoting {
     constructor() {
         this.storageKey = 'manifesto_votes';
@@ -42,7 +42,7 @@ class ManifestoVoting {
 
     loadVotes() {
         try {
-            const stored = sessionStorage.getItem(this.storageKey);
+            const stored = localStorage.getItem(this.storageKey);
             return stored ? JSON.parse(stored) : {};
         } catch (e) {
             return {};
@@ -51,7 +51,7 @@ class ManifestoVoting {
 
     loadVotedItems() {
         try {
-            const stored = sessionStorage.getItem(this.votedKey);
+            const stored = localStorage.getItem(this.votedKey);
             return stored ? JSON.parse(stored) : [];
         } catch (e) {
             return [];
@@ -60,7 +60,7 @@ class ManifestoVoting {
 
     saveVotes() {
         try {
-            sessionStorage.setItem(this.storageKey, JSON.stringify(this.votes));
+            localStorage.setItem(this.storageKey, JSON.stringify(this.votes));
         } catch (e) {
             console.error('Failed to save votes:', e);
         }
@@ -68,7 +68,7 @@ class ManifestoVoting {
 
     saveVotedItems() {
         try {
-            sessionStorage.setItem(this.votedKey, JSON.stringify(this.votedItems));
+            localStorage.setItem(this.votedKey, JSON.stringify(this.votedItems));
         } catch (e) {
             console.error('Failed to save voted items:', e);
         }
@@ -93,7 +93,7 @@ class ManifestoVoting {
         voteButton.disabled = true;
         voteButton.querySelector('.vote-text').textContent = 'Voted';
 
-        // Save to session storage
+        // Save to local storage
         this.saveVotes();
         this.saveVotedItems();
 
