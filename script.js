@@ -158,8 +158,14 @@ class ManifestoVoting {
             item.classList.add('reordering');
         });
 
-        // Reorder in DOM
+        // Reorder in DOM and update numbers
         items.forEach((item, index) => {
+            // Update the displayed number to reflect new position (1-based)
+            const numberElement = item.querySelector('.item-number');
+            if (numberElement) {
+                numberElement.textContent = index + 1;
+            }
+            
             // Use requestAnimationFrame for smooth animation
             requestAnimationFrame(() => {
                 container.appendChild(item);
